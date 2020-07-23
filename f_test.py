@@ -1,10 +1,9 @@
-import xlrd
+from datetime import datetime
 
-df_free_parts = xlrd.open_workbook('무상자재_2006.xls')
+import pandas as pd
 
-# df_free_parts = pd.read_excel('무상자재_2006.xls')
+now = datetime.now()
+one_mon_ago = now + pd.DateOffset(months=-1)
+one_mon_ago1 = one_mon_ago.month
 
-# df_free_parts = df_free_parts.loc[:, ['repr_code', 'part_name']]
-
-
-df_free_parts.to_excel('무상자재.xlsx', index=False)
+print(one_mon_ago1)
