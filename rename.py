@@ -3,7 +3,9 @@ from os import path
 
 
 def main():  # 메인함수 선언
-    for filename in os.listdir('.'):  # 현재 디렉토리에서 파일명 일괄 불러오기
+    for filename in os.listdir('.'):  # 현재 디렉토리에서 파일명 일괄 불러오기 변경
+        # os.listdir('.'): 는 현재 디렉토리 / 현재 포함 하위폴더는 os.walk('.'): 로 변경
+        print(filename)
 
         if filename[-3:] == 'BIN':  # 파일 확장자가 bin이면
 

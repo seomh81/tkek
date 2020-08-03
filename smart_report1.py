@@ -2,26 +2,38 @@ from datetime import datetime
 
 import pandas as pd
 
+#############필요파일 정리#############
+
+# 모두 확장자가 xlsx일 것!!
+# 마스터, 무상, 유상, 전국, 콜 5개 엑셀파일이 필요함
+
+
 ############고장이력 정리##############
 
 
 # 16번째 row를 헤더로 지정해서 엑셀 읽기
 df_breakdown_log = pd.read_excel('콜.xlsx', header=16)
 # EL관리현황에서 호기코드11 JOB NO로 가져오기
-df_el_maintailAll = pd.read_excel('전국.xlsx')
+df_el_maintainAll = pd.read_excel('전국.xlsx')
 
 # loc 이용해 필요한 열 추출
 df_breakdown_log = df_breakdown_log.loc[:,
                    ['Job Number', '일자', '고장부위', '매니저', '조치내용', '운행정지', '갇힘', '도착시 승객갇힘', '유상수리', 'NOF']]
-df_el_maintailAll = df_el_maintailAll.loc[:, ['JOB-NO', '보수코드']]
+df_el_maintainAll = df_el_maintainAll.loc[:, ['JOB-NO', '보수코드', '구분', '계약상품', '계약시작']]
 
 # Vlookup처럼 쓰기위해 헤더 이름 통일
 df_breakdown_log.rename(columns={'Job Number': 'JOB-NO'}, inplace=True)
 df_breakdown_log.rename(columns={'조치내용': '내용'}, inplace=True)
-df_el_maintailAll.rename(columns={'보수코드': '호기코드11'}, inplace=True)
+df_el_maintainAll.rename(columns={'보수코드': '호기코드11'}, inplace=True)
+# 자동화에 덧붙이기
+df_el_maintainAll.rename(columns={'구분': '계약(현재)'}, inplace=True)
+df_el_maintainAll.rename(columns={'계약상품': '계약상품(현재)'}, inplace=True)
+
+# 최신 이력으로 변경(내림차순)
+df_el_maintainAll = df_el_maintainAll.sort_values(by=['계약시작'], ascending=False)
 
 # Vlookup과 유사하게 사용
-df_breakdown_log = pd.merge(df_breakdown_log, df_el_maintailAll, on='JOB-NO', how='left')
+df_breakdown_log = pd.merge(df_breakdown_log, df_el_maintainAll, on='JOB-NO', how='left')
 
 # 데이터 재 정렬
 df_breakdown_log = df_breakdown_log.loc[:,
@@ -180,7 +192,8 @@ df_free_merge.rename(columns={'repr_code': '보수코드9'}, inplace=True)
 df_master = pd.read_excel('마스터.xlsx', header=3)
 
 df_master_pickup = df_master.loc[:,
-                   ['RMS ID', '사양', '호기', '현장명', '소재지', 'E/L 설치일', 'SMART 설치일', '계약상품', '호기코드11', '계약']]
+                   ['RMS ID', '사양', '호기', '현장명', '소재지', 'E/L 설치일', 'SMART 설치일', '계약상품', '호기코드11', '계약', '원장번호', '고객메일',
+                    '참조메일', '메일이력']]
 
 # df_master['E/L 설치일'] = pd.to_datetime(df_master['E/L 설치일']).dt.strftime('%y/%m/%d')
 # df_master['SMART 설치일'] = pd.to_datetime(df_master['SMART 설치일']).dt.strftime('%y/%m/%d')
@@ -203,6 +216,7 @@ df_master_pickup['발송 주기 지정'] = ''
 df_master_pickup['출력 페이지 지정'] = ''
 df_master_pickup['Reserved2'] = ''
 df_master_pickup['보수코드9'] = df_master_pickup['호기코드11'].str[:9]
+df_master_pickup['Reserved3'] = ''
 
 # RMS ID 순으로 오름차순
 df_master_pickup = df_master_pickup.sort_values(by=['RMS ID', '호기코드11'], ascending=True)
@@ -223,10 +237,26 @@ df_total_list = df_total_list.reindex(
              '(1) 유상수리', '(1) NOF', '(2) 일자', '(2) 고장부위', '(2) 매니저', '(2) 내용', '(2) 운행정지', '(2) 갇힘', '(2) 도착시 승객갇힘',
              '(2) 유상수리', '(2) NOF', '(3) 일자', '(3) 고장부위', '(3) 매니저', '(3) 내용', '(3) 운행정지', '(3) 갇힘', '(3) 도착시 승객갇힘',
              '(3) 유상수리', '(3) NOF', '(1)부품명', '(2)부품명', '(3)부품명', '수기입력', 'Reserved', '발송 주기 지정', '출력 페이지 지정',
-             'Reserved2', '호기코드11', '계약'])
+             'Reserved2', '호기코드11', '고객메일', '참조메일', 'Reserved3', '보수코드9', '계약', '원장번호', '메일이력'])
 
-# df_total_list['E/L 설치일'] = pd.to_datetime(df_master['E/L 설치일']).dt.strftime('%y/%m/%d')
-# df_total_list['SMART 설치일'] = pd.to_datetime(df_master['SMART 설치일']).dt.strftime('%y/%m/%d')
+df_total_list['E/L 설치일'] = pd.to_datetime(df_master['E/L 설치일']).dt.strftime('%y/%m/%d')
+df_total_list['SMART 설치일'] = pd.to_datetime(df_master['SMART 설치일']).dt.strftime('%y/%m/%d')
+# DATE와 String이 섞여있어서 에러남.... 아래는 날짜가 모두 날아가버림
+# df_total_list['E/L 설치일'] = df_total_list['E/L 설치일'].str[:11]
+# df_total_list['SMART 설치일'] = df_total_list['SMART 설치일'].str[:11]
 
+################### 유상납선으로 e-mail 끌어오기 ###################
 
-df_total_list.to_excel('SMART자동화.xlsx', index=False)
+df_email_paid = pd.read_excel('유상.xlsx')
+df_email_paid.rename(columns={'ledg_no': '원장번호'}, inplace=True)
+df_email_paid.rename(columns={'rec_email': '세금계산서메일'}, inplace=True)
+df_email_paid.rename(columns={'smart_email': 'SMART메일'}, inplace=True)
+df_email = df_email_paid.loc[:, ['원장번호', '세금계산서메일', 'SMART메일']]
+
+df_total_list = pd.merge(df_total_list, df_email, on='원장번호', how='left')
+
+################## 계약구분 추가하기 #####################
+
+df_total_list = pd.merge(df_total_list, df_el_maintainAll, on='호기코드11', how='left')
+
+df_total_list.to_excel('SMART자동화(원본).xlsx', index=False)
