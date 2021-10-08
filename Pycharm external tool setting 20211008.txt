@@ -1,0 +1,19 @@
+py2exe(one file)
+pyinstaller로 exe 원파일 생성(배포용)
+D:\Python\TKE\venv\Scripts\pyinstaller.exe
+--onefile --windowed $FilePath$
+$ProjectFileDir$
+
+
+Qt Designer
+UI파일 디자인
+D:\Python\TKE\venv\Lib\site-packages\PySide2\designer.exe
+$FilePath$ 
+$ProjectFileDir$
+
+
+Ui2Py
+PyQt ui를 py로 변환
+D:\Python\TKE\venv\Scripts\pyuic5.exe
+$FileName$ -o $FileNameWithoutExtension$.py
+$ProjectFileDir$
